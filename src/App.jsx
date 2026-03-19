@@ -163,7 +163,7 @@ function Scene({ currentRoom, setRoom, onTransitionStart, isRotating }) {
 /* ─────────────────────────────────────────────────────────────────
    CHATBOT COMPONENT — DialoGPT via HuggingFace Inference API
    ───────────────────────────────────────────────────────────────── */
-const HF_API_URL = "https://router.huggingface.co/hf-inference/v1/chat/completions";
+const HF_API_URL = "https://router.huggingface.co/v1/chat/completions";
 const HF_MODEL = "meta-llama/Llama-3.2-1B-Instruct";
 const HF_TOKEN = import.meta.env.VITE_HF_TOKEN;
 
