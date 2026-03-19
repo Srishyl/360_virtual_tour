@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/api/hf/:match*",
+      "source": "/hf-proxy/:match*",
       "destination": "https://router.huggingface.co/:match*"
     },
     {
