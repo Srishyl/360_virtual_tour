@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/hf/:match*",
+      "destination": "https://router.huggingface.co/:match*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
