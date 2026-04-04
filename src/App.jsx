@@ -165,6 +165,32 @@ const HF_API_URL = "https://router.huggingface.co/v1/chat/completions";
 const HF_MODEL = "meta-llama/Llama-3.2-1B-Instruct";
 const HF_TOKEN = import.meta.env.VITE_HF_TOKEN;
 
+const INCIDENT_LOGS = [
+  { id: 1, timestamp: "2026-01-03 12:45", camera: "2", location: "Building A - Hallway", type: "fight", score: 0.89, desc: "A student beating up another student" },
+  { id: 2, timestamp: "2026-01-03 12:53", camera: "2", location: "Building A - Hallway", type: "fall", score: 0.92, desc: "Student has dropped" },
+  { id: 3, timestamp: "2026-01-03 08:15", camera: "1", location: "Main Entrance", type: "entry", score: 0.65, desc: "Unauthorized person attempting entry" },
+  { id: 4, timestamp: "2026-01-03 13:20", camera: "3", location: "Cafeteria", type: "crowd", score: 0.78, desc: "Large gathering detected during lunch" },
+  { id: 5, timestamp: "2026-01-03 10:30", camera: "4", location: "Parking Lot", type: "violation", score: 0.82, desc: "Vehicle parked in restricted zone" },
+  { id: 6, timestamp: "2026-01-03 14:05", camera: "7", location: "Gymnasium", type: "fall", score: 0.88, desc: "Person fell during physical activity" },
+  { id: 7, timestamp: "2026-01-03 09:00", camera: "6", location: "Library", type: "violation", score: 0.71, desc: "Suspicious behavior in restricted area" },
+  { id: 8, timestamp: "2026-01-03 15:30", camera: "2", location: "Building A - Hallway", type: "fight", score: 0.91, desc: "Physical altercation between two individuals" },
+  { id: 9, timestamp: "2026-01-03 11:45", camera: "3", location: "Cafeteria", type: "crowd", score: 0.69, desc: "Overcrowding at lunch counter" },
+  { id: 10, timestamp: "2026-01-03 16:20", camera: "1", location: "Main Entrance", type: "entry", score: 0.55, desc: "Late entry after hours" },
+  { id: 16, timestamp: "2026-01-09 10:43", camera: "1", location: "campus_main_gate", type: "entry", score: 0, desc: "Vehicle entered campus via main gate" },
+  { id: 28, timestamp: "2026-02-13 21:51", camera: "2", location: "Building A - Hallway", type: "fall", score: 0.79, desc: "Verified Fall: Student ID 2" },
+  { id: 30, timestamp: "2026-02-14 05:30", camera: "2", location: "Building A - Hallway", type: "fall", score: 0.79, desc: "Verified Fall: Student ID 2" },
+  { id: 31, timestamp: "2026-02-20 13:57", camera: "2", location: "Building A - Hallway", type: "fight", score: 0.9, desc: "Physical altercation detected between students" },
+  { id: 156, timestamp: "2026-02-21 03:53", camera: "1", location: "campus_main_gate", type: "entry", score: null, desc: "Vehicle entry detected" },
+  { id: 163, timestamp: "2026-02-21 04:08", camera: "1", location: "campus_main_gate", type: "entry", score: null, desc: "Vehicle entered campus via main gate" },
+  { id: 164, timestamp: "2026-02-21 04:09", camera: "1", location: "Main_Campus", type: "fight", score: 0.84, desc: "fight between individuals" },
+  { id: 165, timestamp: "2026-02-21 04:09", camera: "1", location: "Main_Campus", type: "crowd", score: 0.8, desc: "Crowd detected: 13 people" },
+  { id: 166, timestamp: "2026-02-21 04:09", camera: "1", location: "Main_Campus", type: "fall", score: 0.68, desc: "Fall detected" },
+  { id: 167, timestamp: "2026-02-21 04:24", camera: "1", location: "campus_main_gate", type: "entry", score: null, desc: "Vehicle entered campus via main gate" },
+  { id: 168, timestamp: "2026-02-21 04:25", camera: "1", location: "Main_Campus", type: "fight", score: 0.84, desc: "fight between individuals" },
+  { id: 169, timestamp: "2026-02-21 04:25", camera: "1", location: "Main_Campus", type: "crowd", score: 0.8, desc: "Crowd detected: 13 people" }
+];
+
+
 function Chatbot({ currentRoom, isOpen, onClose, externalQuery, clearExternalQuery }) {
   const [messages, setMessages] = useState([
     { role: "bot", text: "Hi! I am Drishti AI, your 360° tour assistant. Let's go for a quick walk & I'll show you around. 🌐", isStatus: false }
@@ -245,8 +271,30 @@ function Chatbot({ currentRoom, isOpen, onClose, externalQuery, clearExternalQue
     setLoading(true);
 
     try {
-      // 1. Fetch from local Drishti Incident Intel backend
+      // 1. Check for hardcoded image data queries
+      const incidentKeywords = ["incident", "event", "security", "log", "anomaly", "happened", "fight", "fall", "entry", "crowd", "violation", "activity", "alert"];
+      const isIncidentQuery = incidentKeywords.some(kw => text.toLowerCase().includes(kw));
+
       let drishtiResponseText = "";
+      
+      // If it's an incident-related query, format the hardcoded logs
+      if (isIncidentQuery) {
+        // Find logs for current room or if it's a general query
+        const roomName = currentRoom.toLowerCase().replace(/\s/g, '');
+        const relevantLogs = INCIDENT_LOGS.filter(log => {
+          const logLoc = log.location.toLowerCase();
+          // Match if user mentions location or if log location matches current room
+          return text.toLowerCase().includes(logLoc) || logLoc.includes(roomName) || text.toLowerCase().includes("all") || text.toLowerCase().includes("any");
+        });
+
+        if (relevantLogs.length > 0) {
+          drishtiResponseText = relevantLogs.map(log => `EVENT: ${log.type.toUpperCase()}\nTIME: ${log.timestamp}\nLOCATION: ${log.location}\nDETAILS: ${log.desc}`).join('\n\n---\n\n');
+        } else if (text.toLowerCase().includes("recent") || text.toLowerCase().includes("show me")) {
+           drishtiResponseText = INCIDENT_LOGS.slice(-5).map(log => `EVENT: ${log.type.toUpperCase()}\nTIME: ${log.timestamp}\nLOCATION: ${log.location}\nDETAILS: ${log.desc}`).join('\n\n---\n\n');
+        }
+      }
+
+      // Also try local backend if available (complementary)
       try {
         const localRes = await fetch("http://localhost:5000/generate", {
           method: "POST",
@@ -256,17 +304,19 @@ function Chatbot({ currentRoom, isOpen, onClose, externalQuery, clearExternalQue
         if (localRes.ok) {
           const localData = await localRes.json();
           if (localData.success && localData.results) {
-            drishtiResponseText = `Database Query Results (${localData.result_count} records found): ` + JSON.stringify(localData.results).substring(0, 1500);
+            const localText = `\n\nADDITIONAL SYSTEM DATA:\n` + JSON.stringify(localData.results).substring(0, 500);
+            drishtiResponseText += localText;
           }
         }
       } catch (err) {
-        console.warn("Could not fetch from local Drishti backend:", err);
+        // Silently fail for local backend
       }
 
       // 2. Build OpenAI-compatible message list with system prompt + history
       let systemContent = `You are Drishti AI, an intelligent assistant for a 360° virtual tour. The user is currently in the ${currentRoom}. Answer questions helpfully and concisely.`;
+      
       if (drishtiResponseText) {
-        systemContent += `\n\nIncident & Camera Data retrieved from backend related to the user's query:\n[ ${drishtiResponseText} ]\nIf the user asks about incidents, safety, or cameras, incorporate this data into your friendly answer avoiding raw JSON format.`;
+        systemContent += `\n\nCRITICAL CONTEXT (Hardcoded Incident Data):\n${drishtiResponseText}\n\nIf the user asked about incidents or security, use the EXACT format above for each event (EVENT, TIME, LOCATION, DETAILS). Do not add any preamble like "I found..." or "Here are...". Start directly with the data. If multiple incidents are found, separate them with "---". Do not use any bolding or markdown formatting.`;
       }
 
       const systemPrompt = {
