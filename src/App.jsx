@@ -109,10 +109,8 @@ function Hotspot({ position, label, onClick, type, preview }) {
           title={`Go to ${label}`}
         >
           <svg viewBox="0 0 100 100" width="100" height="100">
-            {/* Faint ghost chevron ahead */}
-            <polygon points="50,15 80,35 75,42 50,25 25,42 20,35" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2" />
-            {/* Solid thick white map chevron */}
-            <polygon points="50,35 95,65 85,75 50,52 15,75 5,65" fill="rgba(255,255,255,0.95)" stroke="white" strokeWidth="1" />
+            {/* Solid thick black arrow */}
+            <polygon points="50,25 80,55 60,55 60,95 40,95 40,55 20,55" fill="rgba(0,0,0,0.95)" stroke="black" strokeWidth="1" />
           </svg>
         </div>
       </Html>
@@ -246,15 +244,38 @@ function Chatbot({ currentRoom, isOpen, onClose, externalQuery, clearExternalQue
     setInput("");
     setLoading(true);
 
-    // Build OpenAI-compatible message list with system prompt + history
-    const systemPrompt = {
-      role: "system",
-      content: `You are a friendly virtual tour guide for a house. The user is currently viewing the ${currentRoom} room. Answer questions about the rooms, furniture, and home features concisely.`
-    };
-    const newHistory = [...history, { role: "user", content: text }];
-    const chatMessages = [systemPrompt, ...newHistory];
-
     try {
+      // 1. Fetch from local Drishti Incident Intel backend
+      let drishtiResponseText = "";
+      try {
+        const localRes = await fetch("http://localhost:5000/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: text })
+        });
+        if (localRes.ok) {
+          const localData = await localRes.json();
+          if (localData.success && localData.results) {
+            drishtiResponseText = `Database Query Results (${localData.result_count} records found): ` + JSON.stringify(localData.results).substring(0, 1500);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch from local Drishti backend:", err);
+      }
+
+      // 2. Build OpenAI-compatible message list with system prompt + history
+      let systemContent = `You are Drishti AI, an intelligent assistant for a 360° virtual tour. The user is currently in the ${currentRoom}. Answer questions helpfully and concisely.`;
+      if (drishtiResponseText) {
+        systemContent += `\n\nIncident & Camera Data retrieved from backend related to the user's query:\n[ ${drishtiResponseText} ]\nIf the user asks about incidents, safety, or cameras, incorporate this data into your friendly answer avoiding raw JSON format.`;
+      }
+
+      const systemPrompt = {
+        role: "system",
+        content: systemContent
+      };
+      const newHistory = [...history, { role: "user", content: text }];
+      const chatMessages = [systemPrompt, ...newHistory];
+
       const data = await callHuggingFace(chatMessages);
       console.log("HF response:", data);
 
@@ -334,7 +355,16 @@ function Chatbot({ currentRoom, isOpen, onClose, externalQuery, clearExternalQue
         <div ref={messagesEndRef} />
       </div>
 
-
+      {!loading && (
+        <div className="chatbot-chips">
+          <div className="chatbot-chip-row" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <button className="chip" onClick={() => sendMessage(`Where am I right now?`)}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: '6px'}}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+              Location
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Input Area */}
       <div className="chatbot-input-area">
@@ -390,95 +420,56 @@ const UIOverlay = ({ currentRoom, setRoom, fade, onTransitionStart, isRotating, 
       <div className={`fade-overlay ${fade ? "active" : ""}`} />
       <div className="ui-overlay">
         <header className="ui-header">
-          <div className="app-title">360° Virtual Tour</div>
+          {/* Top Left Label replacing App Title */}
+          <div className="room-indicator">
+            <span className="room-name">{rooms[currentRoom].name}</span>
+          </div>
+
           <div className="header-controls">
-            <div className="room-indicator">
-              <div className="indicator-dot" />
-              <span className="room-name">{rooms[currentRoom].name}</span>
-            </div>
-
-            <button
-              className="rotation-toggle-btn"
-              onClick={() => setIsRotating(!isRotating)}
-              title={isRotating ? "Pause Rotation" : "Play Rotation"}
-            >
-              {isRotating ? (
-                // Pause Icon
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16"></rect>
-                  <rect x="14" y="4" width="4" height="16"></rect>
-                </svg>
-              ) : (
-                // Play Icon
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-              )}
-              <span>{isRotating ? 'Pause' : 'Play'}</span>
-            </button>
-
-            <div className={`explore-menu-container ${exploreStuck ? "stuck-open" : ""}`}>
-              <button className="explore-btn" onClick={() => setExploreStuck(s => !s)}>
-                <span>Explore</span>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
-              </button>
-
-              <div className="explore-dropdown">
-                {Object.keys(rooms).map((id) => (
-                  <div
-                    key={id}
-                    className={`dropdown-item ${currentRoom === id ? "active" : ""}`}
-                    onClick={() => handleNavClick(id)}
-                  >
-                    <img src={rooms[id].image} alt={rooms[id].name} className="dropdown-thumbnail" />
-                    <span>{rooms[id].name}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Location Button */}
-            <button
-              className="rotation-toggle-btn"
-              onClick={handleLocationClick}
-              title="Ask AI about this location"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
-              <span>Location</span>
-            </button>
+            {/* Header controls are now empty, but could be used in future */}
           </div>
         </header>
-      </div>
 
-      {/* ── Floating Chat Button (Pill Layout) ── */}
-      <button
-        id="chatbot-fab"
-        className={`chatbot-fab-pill ${chatOpen ? "chatbot-fab-active" : ""}`}
-        onClick={() => setChatOpen(o => !o)}
-        title={chatOpen ? "Close Drishti AI" : "Ask Drishti AI"}
-      >
-        {!chatOpen ? (
-          <>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="pill-arrow">
-              <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="pill-chat-icon">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-            <span className="pill-title">Drishti AI</span>
-          </>
-        ) : (
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        )}
-      </button>
+        {/* Bottom Right Controls Container */}
+        <div className="bottom-right-controls">
+          <button
+            className="play-pause-btn"
+            onClick={() => setIsRotating(!isRotating)}
+            title={isRotating ? "Pause Rotation" : "Play Rotation"}
+          >
+            {isRotating ? (
+              // Pause Icon
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+              </svg>
+            ) : (
+              // Play Icon
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+            )}
+          </button>
+
+          <button
+            id="chatbot-fab"
+            className={`chatbot-fab-pill ${chatOpen ? "chatbot-fab-active" : ""}`}
+            onClick={() => setChatOpen(o => !o)}
+          >
+            <span className="chatbot-fab-label">Ask Drishti AI</span>
+            {!chatOpen ? (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="pill-chat-icon">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            ) : (
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            )}
+          </button>
+        </div>
+      </div>
 
       {/* ── Chatbot Panel ── */}
       <Chatbot
