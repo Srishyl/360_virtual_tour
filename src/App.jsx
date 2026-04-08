@@ -110,7 +110,7 @@ function Hotspot({ position, label, onClick, type, preview }) {
         >
           <svg viewBox="0 0 100 100" width="100" height="100">
             {/* Solid thick black arrow */}
-            <polygon points="50,25 80,55 60,55 60,95 40,95 40,55 20,55" fill="rgba(0,0,0,0.95)" stroke="black" strokeWidth="1" />
+                        <polygon points="50,25 80,55 60,55 60,95 40,95 40,55 20,55" className="chevron-arrow" />
           </svg>
         </div>
       </Html>
@@ -451,6 +451,7 @@ function Chatbot({ currentRoom, isOpen, onClose, externalQuery, clearExternalQue
 const UIOverlay = ({ currentRoom, setRoom, fade, onTransitionStart, isRotating, setIsRotating }) => {
   const [chatOpen, setChatOpen] = useState(false);
   const [externalQuery, setExternalQuery] = useState("");
+  const [exploreOpen, setExploreOpen] = useState(false);
   const [exploreStuck, setExploreStuck] = useState(false);
 
   const handleLocationClick = () => {
@@ -460,6 +461,7 @@ const UIOverlay = ({ currentRoom, setRoom, fade, onTransitionStart, isRotating, 
 
   const handleNavClick = (id) => {
     setExploreStuck(false);
+    setExploreOpen(false);
     if (id === currentRoom) return;
     onTransitionStart();
     setTimeout(() => setRoom(id), 800);
@@ -482,11 +484,44 @@ const UIOverlay = ({ currentRoom, setRoom, fade, onTransitionStart, isRotating, 
 
         {/* Bottom Right Controls Container */}
         <div className="bottom-right-controls">
+          <div className={`explore-menu-wrapper ${exploreOpen ? 'active' : ''}`}>
+            <button
+              className={`explore-btn-pill ${exploreOpen ? 'active' : ''}`}
+              onClick={() => setExploreOpen(!exploreOpen)}
+              title="Explore Rooms"
+            >
+              <span className="control-label">Explore Rooms</span>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 6L1 22L8 18L16 22L23 18V2L16 6L8 2L1 6Z" />
+                <path d="M8 2V18" />
+                <path d="M16 6V22" />
+              </svg>
+            </button>
+
+            {exploreOpen && (
+              <div className="explore-dropdown-panel">
+                <div className="dropdown-header">Available Rooms</div>
+                <div className="dropdown-items">
+                  {Object.entries(rooms).map(([id, data]) => (
+                    <div
+                      key={id}
+                      className={`dropdown-item ${currentRoom === id ? 'active' : ''}`}
+                      onClick={() => handleNavClick(id)}
+                    >
+                      <img src={data.image} alt={data.name} className="dropdown-thumb" />
+                      <span className="dropdown-text">{data.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
           <button
             className="play-pause-btn"
             onClick={() => setIsRotating(!isRotating)}
             title={isRotating ? "Pause Rotation" : "Play Rotation"}
           >
+            <span className="control-label">{isRotating ? "Pause Rotation" : "Play Rotation"}</span>
             {isRotating ? (
               // Pause Icon
               <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -506,7 +541,7 @@ const UIOverlay = ({ currentRoom, setRoom, fade, onTransitionStart, isRotating, 
             className={`chatbot-fab-pill ${chatOpen ? "chatbot-fab-active" : ""}`}
             onClick={() => setChatOpen(o => !o)}
           >
-            <span className="chatbot-fab-label">Ask Drishti AI</span>
+            <span className="control-label">Ask Drishti AI</span>
             {!chatOpen ? (
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="pill-chat-icon">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />

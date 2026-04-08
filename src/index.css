@@ -42,13 +42,22 @@ body {
   transform: translateY(-20px);
 }
 
+.chevron-arrow {
+  fill: #64f74a;
+  /* Classic Radioactive Neon Green */
+  stroke: #ffffff;
+  stroke-width: 0.2;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 8px rgba(57, 255, 20, 0.9)) drop-shadow(0 0 15px rgba(57, 255, 20, 0.6));
+  transition: all 0.3s ease;
+}
+
 /* Base Chevron styling providing 3D map perspective */
 .floor-chevron {
   cursor: pointer;
   pointer-events: auto;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   transform-origin: center center;
-  filter: drop-shadow(0 15px 10px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.4));
 }
 
 .floor-chevron svg {
@@ -56,13 +65,12 @@ body {
 }
 
 .floor-chevron:hover {
-  transform: translateY(-8px) scale(1.15);
-  filter: drop-shadow(0 25px 20px rgba(0, 0, 0, 0.5));
+  transform: translateY(-8px) scale(1.1);
 }
 
-/* Keep arrow ghost effect strictly visible */
-.floor-chevron:hover polygon:last-child {
-  fill: #000000;
+.floor-chevron:hover .chevron-arrow {
+  fill: #A7FF83;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 12px rgba(57, 255, 20, 1)) drop-shadow(0 0 25px rgba(57, 255, 20, 0.8));
 }
 
 /* Tooltip bounds laying cleanly above the marker */
@@ -205,6 +213,13 @@ body {
   align-items: center;
   justify-content: center;
   pointer-events: auto;
+  background: var(--bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 10px 24px;
+  border-radius: 50px;
+  border: 1px solid var(--border-glass);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
 }
 
 .room-name {
@@ -212,110 +227,112 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  font-size: 20px;
+  font-size: 16px;
   color: #ffffff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   EXPLORE MENU (Top Right)
+   EXPLORE MENU (Bottom Right)
    ═══════════════════════════════════════════════════════════════════ */
-.explore-menu-container {
+.explore-menu-wrapper {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
 }
 
-.explore-btn {
+.explore-btn-pill {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 180px;
-  padding: 10px 20px;
-  background: var(--bg-glass);
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  background: #4b515a;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-glass);
-  border-radius: 100px;
-  color: white;
-  font-family: 'Outfit', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: #ffffff;
   cursor: pointer;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-  transition: all 0.2s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
 }
 
-.explore-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+.explore-btn-pill:hover, .explore-btn-pill.active {
+  background: #5c626b;
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
 }
 
-.explore-dropdown {
+.explore-dropdown-panel {
   position: absolute;
-  top: calc(100% + 8px);
+  bottom: calc(100% + 15px);
   right: 0;
+  width: 220px;
   background: var(--bg-glass-heavy);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border-glass);
   border-radius: 16px;
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 180px;
-  opacity: 0;
-  transform: translateY(-10px);
-  pointer-events: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 12px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-  z-index: 50;
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.explore-menu-container:hover .explore-dropdown,
-.explore-menu-container.stuck-open .explore-dropdown {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dropdown-header {
+  font-family: 'Outfit', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  padding-left: 4px;
+}
+
+.dropdown-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .dropdown-item {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
   gap: 12px;
-  padding: 10px 12px;
+  padding: 8px;
   border-radius: 10px;
   cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-secondary);
   transition: all 0.2s ease;
-  text-align: left;
-}
-
-.dropdown-thumbnail {
-  width: 48px;
-  height: 36px;
-  object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .dropdown-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .dropdown-item.active {
-  background: #ffffff;
-  color: #0f172a;
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
 }
 
 .fade-overlay {
@@ -429,7 +446,7 @@ body {
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.chatbot-fab-label {
+.control-label {
   position: absolute;
   right: 65px;
   background: #4b515a;
@@ -446,9 +463,12 @@ body {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 100;
 }
 
-.chatbot-fab-pill:hover .chatbot-fab-label {
+.explore-btn-pill:hover .control-label,
+.play-pause-btn:hover .control-label,
+.chatbot-fab-pill:hover .control-label {
   opacity: 1;
   transform: translateX(0);
 }
